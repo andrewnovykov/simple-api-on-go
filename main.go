@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -31,12 +32,13 @@ func main() {
 	r.HandleFunc("/updateitems", updateItems).Methods("PUT")
 
 	port := os.Getenv("PORT")
+
 	if port == "" {
 		port = "8080"
 	}
 
-	fmt.Printf("Server running on port%s\n", port)
-	http.ListenAndServe(port, r)
+	log.Println("Listening on port", port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 }
 
 func createItem(w http.ResponseWriter, r *http.Request) {
