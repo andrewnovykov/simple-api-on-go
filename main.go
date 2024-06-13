@@ -37,6 +37,14 @@ var (
 	mu    sync.RWMutex
 )
 
+const (
+	errBadRequest     = "bad request"
+	errUnauthorized   = "unauthorized"
+	errNotFound       = "not found"
+	errInternalServer = "internal server error"
+	errMissingHeader  = "missing authorization header"
+)
+
 func main() {
 	r := mux.NewRouter()
 
@@ -57,16 +65,23 @@ func main() {
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), r))
 }
 
-func createItem(w http.ResponseWriter, r *http.Request) {
-	// Extract token from the Authorization header
+func extractToken(r *http.Request) (string, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
-		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
-		return
+		return "", fmt.Errorf(errMissingHeader)
 	}
 
-	// Check if the token exists in the users map
+	// Extract the token from the Bearer string
 	token := strings.TrimPrefix(authHeader, "Bearer ")
+	return token, nil
+}
+
+func createItem(w http.ResponseWriter, r *http.Request) {
+	token, err := extractToken(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
 	validToken := false
 	for _, user := range users {
 		if user.Token == token {
@@ -199,15 +214,11 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateItems(w http.ResponseWriter, r *http.Request) {
-	// Extract token from the Authorization header
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+	token, err := extractToken(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-
-	// Check if the token exists in the users map
-	token := strings.TrimPrefix(authHeader, "Bearer ")
 	validToken := false
 	for _, user := range users {
 		if user.Token == token {
@@ -278,10 +289,18 @@ func updateItems(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(updatedIDs)
 }
 
+func decodeRequestBody(w http.ResponseWriter, r *http.Request, v interface{}) error {
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(v)
+	if err != nil {
+		http.Error(w, errBadRequest, http.StatusBadRequest)
+	}
+	return err
+}
+
 func login(w http.ResponseWriter, r *http.Request) {
 	var user User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := decodeRequestBody(w, r, &user); err != nil {
 		return
 	}
 
@@ -303,8 +322,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 func register(w http.ResponseWriter, r *http.Request) {
 	var user User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := decodeRequestBody(w, r, &user); err != nil {
 		return
 	}
 
