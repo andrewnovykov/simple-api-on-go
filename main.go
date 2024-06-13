@@ -18,9 +18,8 @@ type Item struct {
 }
 
 var (
-	store  = make(map[int]Item)
-	mu     sync.RWMutex
-	nextID = 1
+	store = make(map[int]Item)
+	mu    sync.RWMutex
 )
 
 func main() {
@@ -31,7 +30,11 @@ func main() {
 	r.HandleFunc("/items/{id}", getItem).Methods("GET")
 	r.HandleFunc("/updateitems", updateItems).Methods("PUT")
 
-	port := ":8080"
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
 	fmt.Printf("Server running on port%s\n", port)
 	http.ListenAndServe(port, r)
 }
