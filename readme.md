@@ -9,5 +9,7 @@ curl http://localhost:8080/items/1
 
 curl -X PUT -H "Content-Type: application/json" -d '{"ids":[2,1],"item":{"name":"New Item"}}' http://localhost:8080/updateitems
 
+go build -o myapp
+
 
 ```
