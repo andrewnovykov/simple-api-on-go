@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Item struct {
@@ -18,8 +20,20 @@ type Item struct {
 	Price float64 `json:"price"`
 }
 
+type User struct {
+	ID       int    `json:"id"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Token    string `json:"token,omitempty"`
+}
+
+type Token struct {
+	Token string `json:"token"`
+}
+
 var (
 	store = make(map[int]Item)
+	users = make(map[int]User)
 	mu    sync.RWMutex
 )
 
@@ -30,6 +44,8 @@ func main() {
 	r.HandleFunc("/items", getItems).Methods("GET")
 	r.HandleFunc("/items/{id}", getItem).Methods("GET")
 	r.HandleFunc("/updateitems", updateItems).Methods("PUT")
+	r.HandleFunc("/register", register).Methods("POST")
+	r.HandleFunc("/login", login).Methods("POST")
 
 	port := os.Getenv("PORT")
 
@@ -42,6 +58,28 @@ func main() {
 }
 
 func createItem(w http.ResponseWriter, r *http.Request) {
+	// Extract token from the Authorization header
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+		return
+	}
+
+	// Check if the token exists in the users map
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+	validToken := false
+	for _, user := range users {
+		if user.Token == token {
+			validToken = true
+			break
+		}
+	}
+
+	if !validToken {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
 	var item Item
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -161,6 +199,27 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateItems(w http.ResponseWriter, r *http.Request) {
+	// Extract token from the Authorization header
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+		return
+	}
+
+	// Check if the token exists in the users map
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+	validToken := false
+	for _, user := range users {
+		if user.Token == token {
+			validToken = true
+			break
+		}
+	}
+
+	if !validToken {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
 	// Parse the request body
 	var updateRequest struct {
 		IDs  []int `json:"ids"`
@@ -217,4 +276,57 @@ func updateItems(w http.ResponseWriter, r *http.Request) {
 
 	// Respond with the updated IDs
 	json.NewEncoder(w).Encode(updatedIDs)
+}
+
+func login(w http.ResponseWriter, r *http.Request) {
+	var user User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	for _, u := range users {
+		if u.Email == user.Email {
+			err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(user.Password))
+			if err != nil {
+				http.Error(w, "Invalid password", http.StatusUnauthorized)
+				return
+			}
+
+			json.NewEncoder(w).Encode(Token{Token: u.Token})
+			return
+		}
+	}
+
+	http.Error(w, "User not found", http.StatusNotFound)
+}
+
+func register(w http.ResponseWriter, r *http.Request) {
+	var user User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+		return
+	}
+
+	user.ID = len(users) + 1
+	user.Password = string(hashedPassword)
+	user.Token = fmt.Sprintf("token%d", user.ID)
+
+	mu.Lock()
+	users[user.ID] = user
+	mu.Unlock()
+
+	// Create a new struct with only the fields you want to return
+	responseUser := struct {
+		ID    int    `json:"id"`
+		Email string `json:"email"`
+	}{ID: user.ID, Email: user.Email}
+
+	json.NewEncoder(w).Encode(responseUser)
 }
