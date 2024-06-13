@@ -1,4 +1,4 @@
-module github.com/andrewnovykov/simple-api-on-go
+module main
 
 go 1.21
 
