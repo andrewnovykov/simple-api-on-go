@@ -304,6 +304,21 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Read users from the JSON file
+	file, err := os.Open("users.json")
+	if err != nil {
+		http.Error(w, "Failed to open users file", http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	users := make(map[int]User)
+	err = json.NewDecoder(file).Decode(&users)
+	if err != nil {
+		http.Error(w, "Failed to decode users file", http.StatusInternalServerError)
+		return
+	}
+
 	for _, u := range users {
 		if u.Email == user.Email {
 			err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(user.Password))
@@ -326,6 +341,17 @@ func register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if a user with the same email already exists
+	mu.Lock()
+	for _, u := range users {
+		if u.Email == user.Email {
+			http.Error(w, "User with this email already exists", http.StatusBadRequest)
+			mu.Unlock()
+			return
+		}
+	}
+	mu.Unlock()
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
@@ -339,6 +365,16 @@ func register(w http.ResponseWriter, r *http.Request) {
 	mu.Lock()
 	users[user.ID] = user
 	mu.Unlock()
+
+	// Save users to a JSON file
+	file, err := os.OpenFile("users.json", os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		http.Error(w, "Failed to open users file", http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	json.NewEncoder(file).Encode(users)
 
 	// Create a new struct with only the fields you want to return
 	responseUser := struct {
