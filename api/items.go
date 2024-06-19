@@ -195,8 +195,24 @@ func UpdateItems(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
+
+	// Read existing users from the file
+	userfile, err := os.Open("users.json")
+	if err != nil {
+		http.Error(w, "Failed to open users file", http.StatusInternalServerError)
+		return
+	}
+
+	var existingUsers []User
+	err = json.NewDecoder(userfile).Decode(&existingUsers)
+	userfile.Close()
+	if err != nil && err != io.EOF {
+		http.Error(w, "Failed to read users from file", http.StatusInternalServerError)
+		return
+	}
+
 	validToken := false
-	for _, user := range users {
+	for _, user := range existingUsers {
 		if user.Token == token {
 			validToken = true
 			break
