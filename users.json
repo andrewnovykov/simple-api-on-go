@@ -28,5 +28,11 @@
         "email": "your-email-5@example.com",
         "password": "$2a$10$OovxXusBHigLS/wJbAYuHuC0FCYgrIBGZUJdjggxsVtkSlMTiG5iS",
         "token": "$2a$10$OovxXusBHigLS/wJbAYuHuC0FCYgrIBGZUJdjggxsVtkSlMTiG5iS"
+    },
+    {
+        "id": 6,
+        "email": "your-email-6@example.com",
+        "password": "$2a$10$LdQcB.TAskK42aBX386JPuPkATln.ROxTPHR2B4ksv/VQC13.9mf.",
+        "token": "$2a$10$LdQcB.TAskK42aBX386JPuPkATln.ROxTPHR2B4ksv/VQC13.9mf."
     }
 ]

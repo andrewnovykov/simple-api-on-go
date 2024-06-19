@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -21,7 +22,6 @@ type Item struct {
 var (
 	store = make(map[int]Item)
 	users = make(map[int]User)
-	mu    sync.RWMutex
 )
 
 func extractToken(r *http.Request) (string, error) {
@@ -35,14 +35,31 @@ func extractToken(r *http.Request) (string, error) {
 	return token, nil
 }
 
-func createItem(w http.ResponseWriter, r *http.Request) {
+func CreateItem(w http.ResponseWriter, r *http.Request) {
+	var mu sync.RWMutex
 	token, err := extractToken(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
+
+	// Read existing users from the file
+	userfile, err := os.Open("users.json")
+	if err != nil {
+		http.Error(w, "Failed to open users file", http.StatusInternalServerError)
+		return
+	}
+
+	var existingUsers []User
+	err = json.NewDecoder(userfile).Decode(&existingUsers)
+	userfile.Close()
+	if err != nil && err != io.EOF {
+		http.Error(w, "Failed to read users from file", http.StatusInternalServerError)
+		return
+	}
+
 	validToken := false
-	for _, user := range users {
+	for _, user := range existingUsers {
 		if user.Token == token {
 			validToken = true
 			break
@@ -110,7 +127,7 @@ func createItem(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(item)
 }
 
-func getItems(w http.ResponseWriter, r *http.Request) {
+func GetItems(w http.ResponseWriter, r *http.Request) {
 	// Open the file
 	file, err := os.Open("items.json")
 	if err != nil {
@@ -130,7 +147,7 @@ func getItems(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(items)
 }
 
-func getItem(w http.ResponseWriter, r *http.Request) {
+func GetItem(w http.ResponseWriter, r *http.Request) {
 	idStr := mux.Vars(r)["id"]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -172,7 +189,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(item)
 }
 
-func updateItems(w http.ResponseWriter, r *http.Request) {
+func UpdateItems(w http.ResponseWriter, r *http.Request) {
 	token, err := extractToken(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)

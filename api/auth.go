@@ -34,10 +34,6 @@ const (
 	errMissingHeader  = "missing authorization header"
 )
 
-var (
-	mu sync.RWMutex
-)
-
 func decodeRequestBody(w http.ResponseWriter, r *http.Request, v interface{}) error {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(v)
@@ -85,6 +81,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
+	var mu sync.RWMutex
 	var user User
 	if err := decodeRequestBody(w, r, &user); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

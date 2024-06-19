@@ -10,19 +10,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type Item struct {
-	ID    int     `json:"id"`
-	Name  string  `json:"name"`
-	Price float64 `json:"price"`
-}
-
 func main() {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/items", api.createItem).Methods("POST")
-	r.HandleFunc("/items", api.getItems).Methods("GET")
-	r.HandleFunc("/items/{id}", api.getItem).Methods("GET")
-	r.HandleFunc("/updateitems", api.updateItems).Methods("PUT")
+	r.HandleFunc("/items", api.CreateItem).Methods("POST")
+	r.HandleFunc("/items", api.GetItems).Methods("GET")
+	r.HandleFunc("/items/{id}", api.GetItem).Methods("GET")
+	r.HandleFunc("/updateitems", api.UpdateItems).Methods("PUT")
 	r.HandleFunc("/register", api.Register).Methods("POST")
 	r.HandleFunc("/login", api.Login).Methods("POST")
 
