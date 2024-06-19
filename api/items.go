@@ -19,10 +19,7 @@ type Item struct {
 	Price float64 `json:"price"`
 }
 
-var (
-	store = make(map[int]Item)
-	users = make(map[int]User)
-)
+var store = make(map[int]Item)
 
 func extractToken(r *http.Request) (string, error) {
 	authHeader := r.Header.Get("Authorization")
