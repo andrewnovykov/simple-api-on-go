@@ -1,1 +1,37 @@
-[{"id":3,"name":"item 3","price":22.5},{"id":1,"name":"New Item 1","price":1000000},{"id":2,"name":"New Item 1","price":1000000},{"id":4,"name":"item1","price":10.5},{"id":5,"name":"item1","price":10.5},{"id":6,"name":"item1","price":10.5},{"id":7,"name":"item-name","price":10.5}]
+[
+    {
+        "id": 3,
+        "name": "item 3",
+        "price": 22.5
+    },
+    {
+        "id": 1,
+        "name": "New Item 1",
+        "price": 1000000
+    },
+    {
+        "id": 2,
+        "name": "New Item 1",
+        "price": 1000000
+    },
+    {
+        "id": 4,
+        "name": "item1",
+        "price": 10.5
+    },
+    {
+        "id": 5,
+        "name": "item1",
+        "price": 10.5
+    },
+    {
+        "id": 6,
+        "name": "item1",
+        "price": 10.5
+    },
+    {
+        "id": 7,
+        "name": "item-name",
+        "price": 10.5
+    }
+]
