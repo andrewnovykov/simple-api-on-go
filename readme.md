@@ -5,6 +5,9 @@ https://simple-api-on-go-redstudio-da809bd3.koyeb.app/
 BUILD APP
 go build -o myapp
 
+RUN APP
+./myapp
+
 CREATE USER
 curl -X POST -H "Content-Type: application/json" -d '{"email":"your-email@example.com", "password":"your-password"}' http://localhost:8080/register
 
